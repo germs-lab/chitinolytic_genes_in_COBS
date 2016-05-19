@@ -5,84 +5,60 @@ for (i in 2:dim(dat)[2]){
 	su[i] <- sum(dat[,i])
 }
 
-#cal average for each crop
-foo <- vector(mode="list", length=3)
-names(foo) <- c("CC", "P", "FP")
-foo["CC"] <- 0
-foo["P"] <- 0
-foo["FP"] <- 0
+cc <- c()
+p <-c()
+fp <- c()
 
 for (i in 2:dim(dat)[2]){
 	crp = meta[meta$rast_file == names(dat)[i],][1] 
-	if (foo[crp[1,1]] == 0){
-		foo[crp[1,1]] <- su[i]
-	}else{
-		temp <- as.numeric(foo[crp[1,1]])
-		temp <- temp + su[i]
-		foo[crp[1,1]]  <- temp
+	if (crp == "CC"){
+		cc <- cbind(cc,su[i])
+	}else if(crp == "P"){
+		p <- cbind(p,su[i])
+	}else if(crp == "PF"){
+		fp <- cbind(fp,su[i])
 	}
 }
-temp <- as.numeric(foo["CC"])
-temp <- temp/sum(meta$Crop == "CC")
-foo["CC"] <- temp
 
-temp <- as.numeric(foo["P"])
-temp <- temp/sum(meta$Crop == "P")
-foo["P"] <- temp
-
-temp <- as.numeric(foo["FP"])
-temp <- temp/sum(meta$Crop == "PF")
-foo["FP"] <- temp
 
 gene <- c(gename,gename,gename)
 va <- c("CC","P","FP")
-value <- c(as.numeric(foo["CC"]),as.numeric(foo["P"]),as.numeric(foo["FP"]))
-cfinal = data.frame(gene,va,value)
+value <- c(mean(cc),mean(p),mean(fp))
+stdev <- c(sd(cc),sd(p),sd(fp))
+cfinal = data.frame(gene,va,value,stdev)
 final = rbind(final,cfinal)
 
 #cal average for each aggregate
-agfoo <- vector(mode="list", length=5)
-names(agfoo) <- c("LM", "MM", "SM", "Micro", "WS")
-agfoo["LM"] <- 0
-agfoo["MM"] <- 0
-agfoo["SM"] <- 0
-agfoo["Micro"] <- 0
-agfoo["WS"] <- 0
 
+
+lm <- c()
+mm <-c()
+sm <- c()
+micro <-c()
+ws <- c()
+con <- c()
+let <- c()
 for (i in 2:dim(dat)[2]){
 	crp = meta[meta$rast_file == names(dat)[i],][2] 
-	if (agfoo[crp[1,1]] == 0){
-		agfoo[crp[1,1]] <- su[i]
-	}else{
-		temp <- as.numeric(agfoo[crp[1,1]])
-		temp <- temp + su[i]
-		agfoo[crp[1,1]]  <- temp
+	if (crp == "LM"){
+		lm <- cbind(lm,su[i])
+	}else if(crp == "MM"){
+		mm <- cbind(mm,su[i])
+	}else if(crp == "SM"){
+		sm <- cbind(sm,su[i])
+	}else if(crp == "Micro"){
+		micro <- cbind(micro,su[i])
+	}else if(crp == "WS"){
+		ws <- cbind(ws,su[i])
 	}
 }
-temp <- as.numeric(agfoo["LM"])
-temp <- temp/sum(meta$SoilFrac == "LM")
-agfoo["LM"] <- temp
 
-temp <- as.numeric(agfoo["MM"])
-temp <- temp/sum(meta$SoilFrac == "MM")
-agfoo["MM"] <- temp
-
-temp <- as.numeric(agfoo["SM"])
-temp <- temp/sum(meta$SoilFrac == "SM")
-agfoo["SM"] <- temp
-
-temp <- as.numeric(agfoo["Micro"])
-temp <- temp/sum(meta$SoilFrac == "Micro")
-agfoo["Micro"] <- temp
-
-temp <- as.numeric(agfoo["WS"])
-temp <- temp/sum(meta$SoilFrac == "WS")
-agfoo["WS"] <- temp
 
 gene <- c(gename,gename,gename,gename,gename)
 va <- c("LM","MM","SM","Micro","WS")
-value <-c(as.numeric(agfoo["LM"]),as.numeric(agfoo["MM"]),as.numeric(agfoo["SM"]),as.numeric(agfoo["Micro"]),as.numeric(agfoo["WS"]))
-agfinal = data.frame(gene,va,value)
+value <- c(mean(lm),mean(mm),mean(sm),mean(micro),mean(ws))
+stdev <- c(sd(lm),sd(mm),sd(sm),sd(micro),sd(ws))
+agfinal = data.frame(gene,va,value,stdev)
 final = rbind(final,agfinal)
 
 return(final)
@@ -126,16 +102,28 @@ nag = nag[-badrows]
 gene <- c()
 va <- c()
 value <- c()
-final = data.frame(gene,va,value)
+stdev <- c()
+final = data.frame(gene,va,value,stdev)
 
 #chia
 final <- get_count("ChiA", chia,final,meta)
 
-#nag
-final <- get_count("NAG",nag,final,meta)
+
 
 #plot
 library(ggplot2)
-pdf("~/Box Sync/2016/5May/chia/cobs_count.pdf",width=6,height=8)
-ggplot(final,aes(x=va, y=value, fill=gene))+geom_bar(stat="identity")
+pdf("~/Box Sync/2016/5May/chia/cobs_count_chia.pdf",width=6,height=8)
+ggplot(final,aes(x=va, y=value, fill=gene))+geom_bar(stat="identity")+geom_errorbar(aes(ymax = value + stdev, ymin = value - stdev),width=0.25)
+dev.off()
+
+#nag
+#final <- get_count("NAG",nag,final,meta)
+gene <- c()
+va <- c()
+value <- c()
+stdev <- c()
+final = data.frame(gene,va,value,stdev)
+final <- get_count("NAG",nag,final,meta)
+pdf("~/Box Sync/2016/5May/chia/cobs_count_nag.pdf",width=6,height=8)
+ggplot(final,aes(x=va, y=value, fill=gene))+geom_bar(stat="identity")+geom_errorbar(aes(ymax = value + stdev, ymin = value - stdev),width=0.25)
 dev.off()
